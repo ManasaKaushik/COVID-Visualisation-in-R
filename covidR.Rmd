@@ -1,0 +1,105 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+```{r}
+system('defaults write org.R-project.R force.LANG en_US.UTF-8')
+```
+
+
+```{r}
+install.packages('remotes')
+install.packages('DataExplorer')
+```
+```{r}
+install.packages('magick')
+```
+
+
+```{r}
+install.packages('ggrepel')
+```
+
+
+```{r}
+remotes::install_github("GuangchuangYu/nCov2019")
+require(nCov2019)
+require(dplyr)
+```
+Get and load the data.
+Print variables to update total number of confirmed cases to the latest.
+
+```{r}
+x <- get_nCov2019()
+y <- load_nCov2019()
+x
+y
+```
+Latest global data along with all features, providing an overview of the dataset.
+
+```{r}
+x['global',]
+```
+DataExplorer is a package that helps quickly build data visualizations.
+
+```{r}
+library(DataExplorer)
+plot_str(x)
+```
+
+```{r}
+plot_str(y)
+```
+After plotting x and y, we observe that there are 3 different data frames. 'data' represents the historical data in China, 'province' represents the aggregated cases on the province level and the 'global' frame represents the cases and their information worldwide.
+We can take a summary in order to get a statistical overview of the data.
+
+```{r}
+summary(x['global',])
+```
+
+```{r}
+d <- y['global']
+d <- d[d$country != 'China',]
+n <- d %>% filter(time == time(y)) %>%
+ top_n(10, cum_confirm) %>%
+ arrange(desc(cum_confirm))
+
+require(ggplot2)
+require(ggrepel)
+ggplot(filter(d, country %in% n$country, d$time > '2020-02-15'),
+ aes(time, cum_confirm, color=country)) +
+ geom_line() +
+ geom_text_repel(aes(label=country),
+ function(d) d[d$time == time(y),]) +
+ theme_minimal(base_size=14) +
+ theme(legend.position = "none")
+```
+
+
+```{r}
+x <- get_nCov2019()
+x
+plot(x)
+```
+
+```{r}
+library(magick)
+y <- load_nCov2019()
+d <- c(paste0("2020-02-", 12:29), paste0("2020-03-0", 1:9), paste0("2020-03-1", 0:5))
+img <- image_graph(1200, 700, res = 96)
+out <- lapply(d, function(date){
+ p <- plot(y, date=date,
+ label=FALSE, continuous_scale=TRUE)
+ print(p)
+})
+dev.off()
+animation <- image_animate(img, fps = 2)
+print(animation)
+```
+
+
+
+
+
